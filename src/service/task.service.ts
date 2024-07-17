@@ -1,53 +1,75 @@
 import {
-  createTaskInDB,
-  deleteTaskByIdFromDB,
-  getTaskByIdFromDB,
-  getTasksFromDB,
-  updateTaskInDB,
-  findTask,
+  TaskModel,
 } from "../model/task.model";
-import { ITask } from "../interfaces/ITask.interface";
+import { getTaskQuery, ITask } from "../interfaces/ITask.interface";
 import loggerWithNameSpace from "../utils/logger";
 import { NotFoundError } from "../error/NotFoundError";
 
-const logger = loggerWithNameSpace("TaskService")
+const logger = loggerWithNameSpace("TaskService");
 
 //get tasks
-export function getTasks(userId: number) {
-  logger.info("Called getTasks")
-  return getTasksFromDB(userId);
+export async function getTasks(userId: number, query: getTaskQuery) {
+  logger.info("Called getTasks");
+  const data = await TaskModel.getUserTasks(userId, query);
+
+  if (!data) throw new NotFoundError("No tasks found");
+  const count = await TaskModel.countByUserId(userId, query);
+  const meta = {
+    page: query.page,
+    size: data.length,
+    total: +count.count,
+  };
+  return { data, meta };
 }
 
 //get task by id
-export function getTaskById(id: number, userId: number) {
-  logger.info("Called getTaskById")
-  const index = findTask(id, userId);
-  if(index === -1) throw new NotFoundError("Not found");
-  const data = getTaskByIdFromDB(index)
-  return data
+export async function getTaskById(id: number, userId: number) {
+  logger.info("Called getTaskById");
+
+  const task = await TaskModel.getTaskById(id);
+  if (!task) throw new NotFoundError("Task with this Id does not exist");
+
+  const data = await TaskModel.getTaskById(id);
+  return data;
 }
 
 //delete task
-export function deleteTaskById(id: number, userId: number) {
-  logger.info("Called deleteTaskByid")
-  const index = findTask(id, userId);
-  if(index === -1) throw new NotFoundError("Not found");
-  const data = deleteTaskByIdFromDB(index)
-  return data
+export async function deleteTaskById(id: number, userId: number) {
+  logger.info("Called deleteTaskByid");
+
+  const task = await TaskModel.getTaskById(id);
+  if (!task) throw new NotFoundError("Task with this Id does not exist");
+  if (+task.created_by !== userId) {
+    throw new NotFoundError("Task with this Id does not exist");
+  }
+  await TaskModel.delete(id);
+  return {
+    message: "task deleted",
+  };
 }
 
 //create task
-export function createTask(task: ITask, userId: number) {
-  logger.info("Called createTask")
+export async function createTask(task: ITask, userId: number) {
+  logger.info("Called createTask");
   const taskWithUserId = { ...task, userId }; //add userId to the task
-  return createTaskInDB(taskWithUserId);
+  await TaskModel.create(taskWithUserId);
+
+  return {
+    message: "task created",
+  };
 }
 
 //update task
-export function updateTaskById(id: number, task: ITask, userId: number) {
+export async function updateTaskById(id: number, task: ITask, userId: number) {
   logger.info("Called updateTaskById");
-  const index = findTask(id, userId);
-  if(index === -1) throw new NotFoundError("Not found");
-  const data = updateTaskInDB(index, task);
-  return data;
+
+  const taskCheck = await TaskModel.getTaskById(id);
+  if (!taskCheck) throw new NotFoundError("Task with this Id does not exist");
+  if (+taskCheck.created_by !== userId)
+    throw new NotFoundError("Task with this Id does not exist");
+
+  await TaskModel.update(id, task);
+  return {
+    message: "task updated",
+  };
 }

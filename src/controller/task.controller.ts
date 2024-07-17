@@ -3,15 +3,17 @@ import { NextFunction, Response } from "express";
 import { Request } from "../interfaces/auth.interface";
 import HttpStatusCodes from "http-status-codes";
 import loggerWithNameSpace from "../utils/logger";
+import { getTaskQuery } from "../interfaces/ITask.interface";
 
 const logger = loggerWithNameSpace("TaskController")
 
 //get all tasks
-export function getAllTasks(req: Request, res: Response, next: NextFunction) {
+export async function getAllTasks(req: Request<any, any , any, getTaskQuery>, res: Response, next: NextFunction) {
   try {
     logger.info("Called getAllTasks");
-    const user =  req.user!; //extract user
-    const tasks = taskService.getTasks(parseInt(user.id)); //get all tasks from the services
+    const { query } = req
+    const user =  req.user; //extract user
+    const tasks = await taskService.getTasks(parseInt(user.id), query); //get all tasks from the services
     res.status(HttpStatusCodes.OK).json(tasks);
   } catch(error){
     next();
@@ -19,7 +21,7 @@ export function getAllTasks(req: Request, res: Response, next: NextFunction) {
 }
 
 //get task by id
-export function getTaskById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+export async function getTaskById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
   try {
     logger.info("Called getTaskById");
     const user =  req.user!; //extract user
@@ -32,23 +34,23 @@ export function getTaskById(req: Request<{ id: string }>, res: Response, next: N
 }
 
 //delete task by id
-export function deleteTaskById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+export async function deleteTaskById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
   try {
     logger.info("Called deleteTaskById")
     const user =  req.user!; //extract user
     const { id } = req.params; //extract the task ID
-    res.status(HttpStatusCodes.OK).json(taskService.deleteTaskById(parseInt(id), parseInt(user.id))); //delete specific task
+    res.status(HttpStatusCodes.OK).json(await taskService.deleteTaskById(parseInt(id), parseInt(user.id))); //delete specific task
   } catch (error) {
     next();
   }
 }
 
 //create new task
-export function createTask(req: Request, res: Response, next: NextFunction) {
+export async function createTask(req: Request, res: Response, next: NextFunction) {
   try{
     logger.info("Called createTask");
     const { body } = req; //extract the body in json
-    const userId =  req.user?.id!; //extract user
+    const userId =  req.user.id; //extract user
     taskService.createTask(body, parseInt(userId)); //create the task
     res.status(HttpStatusCodes.OK).json({ message: "Task created" });
   } catch(error){
@@ -57,7 +59,7 @@ export function createTask(req: Request, res: Response, next: NextFunction) {
 }
 
 //update specific task
-export function updateTaskById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+export async function updateTaskById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
   try {
     logger.info("Called updateTaskById");
     const user =  req.user!; //extract user

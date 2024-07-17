@@ -6,3 +6,8 @@ export interface ITask{
     userId:number
 }
 
+export interface getTaskQuery {
+    q?: string;
+    page?: number;
+    size?: number;
+}

@@ -4,21 +4,37 @@ import {
   deleteTaskById,
   createTask,
   getTaskById,
-  updateTaskById
+  updateTaskById,
 } from "../controller/task.controller";
 import { authenticate } from "../middlewares/auth.middleware";
-import { validateReqBody, validateReqParams } from "../middlewares/validator.middleware";
-import { createTaskBodySchema, taskIdSchema, updateTaskBodySchema } from "../schema/task.schema";
+import {
+  validateReqBody,
+  validateReqParams,
+  validateReqQuery,
+} from "../middlewares/validator.middleware";
+import {
+  createTaskBodySchema,
+  getTaskQuerySchema,
+  taskIdSchema,
+  updateTaskBodySchema,
+} from "../schema/task.schema";
 
 const router = express();
 
-router.route('/')
-  .get(authenticate, getAllTasks)
-  .post(authenticate,validateReqBody(createTaskBodySchema), createTask)
+router
+  .route("/")
+  .get(authenticate, validateReqQuery(getTaskQuerySchema), getAllTasks)
+  .post(authenticate, validateReqBody(createTaskBodySchema), createTask);
 
-router.route('/:id')
-  .get(authenticate,validateReqParams(taskIdSchema), getTaskById)
-  .put(authenticate,validateReqParams(taskIdSchema), validateReqBody(updateTaskBodySchema),updateTaskById)
-  .delete(authenticate,validateReqParams(taskIdSchema), deleteTaskById)
+router
+  .route("/:id")
+  .get(authenticate, validateReqParams(taskIdSchema), getTaskById)
+  .put(
+    authenticate,
+    validateReqParams(taskIdSchema),
+    validateReqBody(updateTaskBodySchema),
+    updateTaskById
+  )
+  .delete(authenticate, validateReqParams(taskIdSchema), deleteTaskById);
 
 export default router;

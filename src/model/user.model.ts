@@ -16,6 +16,7 @@ export class UserModel extends BaseModel {
 
     await this.queryBuilder().insert(userToCreate).table("users");
   }
+  //update user
   static async update(id: string, user: User, updatedBy: string) {
     const userToUpdate = {
       name: user.name,
@@ -77,7 +78,7 @@ export class UserModel extends BaseModel {
     return await this.queryBuilder().delete().from("users").where({ id });
   }
 
-  // Function to get all users
+  //get all users
   static getUsers(filter: getUserQuery) {
     const { q, page, size } = filter;
     const query = this.queryBuilder()
@@ -91,7 +92,7 @@ export class UserModel extends BaseModel {
     return query;
   }
 
-  // Function to count users
+  //count users
   static count(filter: getUserQuery) {
     const { q } = filter;
     const query = this.queryBuilder().count("*").table("users").first();
@@ -101,28 +102,3 @@ export class UserModel extends BaseModel {
     return query;
   }
 }
-
-export let users: User[] = [
-  {
-    id: "1",
-    name: "Kalash",
-    email: "kalash1@gmail.com",
-    password: "$2b$10$I24gdNea7i6fSXPl1uy96.cle9N5v6Zt8HyZTkTpFhD.kwzHeBHNW",
-    permissions: [
-      "users.getAll",
-      "users.create",
-      "users.getById",
-      "users.updateById",
-      "users.deleteById",
-    ],
-  },
-  {
-    id: "2",
-    name: "Kalash",
-    email: "kalash2@gmail.com",
-    password: "$2b$10$I24gdNea7i6fSXPl1uy96.cle9N5v6Zt8HyZTkTpFhD.kwzHeBHNW",
-    permissions: [],
-  },
-];
-
-

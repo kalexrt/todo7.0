@@ -1,6 +1,5 @@
 import bcrypt, { hash } from "bcrypt";
 import { getUserQuery, User } from "../interfaces/user.interface";
-import * as taskModel from "../model/task.model";
 import * as userModel from "../model/user.model";
 import loggerWithNameSpace from "../utils/logger";
 import { NotFoundError } from "../error/NotFoundError";
@@ -33,7 +32,7 @@ export async function createUser(user: User, id: string) {
   );
 }
 
-// Get all users
+// get all users
 export const getUsers = async (query: getUserQuery) => {
   const data = await userModel.UserModel.getUsers(query);
   if (!data) throw new NotFoundError("No users found");

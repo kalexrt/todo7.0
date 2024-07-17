@@ -1,80 +1,87 @@
-import { ITask } from "../interfaces/ITask.interface";
+import { getTaskQuery, ITask } from "../interfaces/ITask.interface";
 import { STATUS } from "../interfaces/status.interface";
 import loggerWithNameSpace from "../utils/logger";
+import { BaseModel } from "./Base";
 
-const logger = loggerWithNameSpace("TaskModel")
+const logger = loggerWithNameSpace("TaskModel");
 
-export let db: ITask[] = [
-  {
-    id: 1,
-    name: "walk the dog",
-    status: STATUS.TODO,
-    userId: 1,
-  },
-  {
-    id: 2,
-    name: "feed the cat",
-    status: STATUS.TODO,
-    userId: 1,
-  },
-  {
-    id: 1,
-    name: "assignment 1",
-    status: STATUS.TODO,
-    userId: 2,
-  },
-];
+export class TaskModel extends BaseModel {
+  //create tasks
+  static async create(task: ITask) {
+    logger.info("Called createTaskInDB");
+    const taskToCreate = {
+      id: task.id,
+      name: task.name,
+      status_id: this.statusToStatusId(task.status),
+      created_by: task.userId,
+      user_id: task.userId,
+    };
+    await this.queryBuilder().insert(taskToCreate).table("tasks");
+  }
 
-//find task
-export function findTask(searchId: number, userId: number) {
-  logger.info("Called FindTask")
-  const index = db.findIndex((task) => task.id === searchId && task.userId === userId) 
-  return index
-}
+  //get status id from status
+  static statusToStatusId(status: STATUS) {
+    switch (status) {
+      case STATUS.COMPLETE:
+        return 1;
+      case STATUS.ONGOING:
+        return 2;
+      case STATUS.TODO:
+        return 3;
+    }
+  }
 
-//get all tasks
-export function getTasksFromDB(userId: number) {
-  logger.info("Called getTasksFromDB")
-  const data = db.filter((task) => task.userId === userId);
-  return data
-}
+  //delete task
+  static async delete(id: number) {
+    logger.info("Called delete Task");
+    return await this.queryBuilder().delete().from("tasks").where({ id });
+  }
 
-//get task from id
-export function getTaskByIdFromDB(index: number) {
-  logger.info("Called getTaskByIdFromDB")
-  const data = db[index];
-  return data
-}
+  //get task by id
+  static async getTaskById(id: number) {
+    return await this.queryBuilder()
+      .select("*")
+      .from("tasks")
+      .where({ id })
+      .first();
+  }
 
-//delete task
-export function deleteTaskByIdFromDB(index: number) {
-  logger.info("Called deleteTaskByIdFromDB")
-  db.splice(index, 1); //remove task
-  return {message:"task deleted"}
-}
+  //update task
+  static async update(id: number, task: ITask) {
+    const taskToUpdate = {
+      name: task.name,
+      status_id: this.statusToStatusId(task.status),
+      updated_at: new Date(),
+      updated_by: task.userId,
+    };
+    await this.queryBuilder().update(taskToUpdate).table("tasks").where({ id });
+  }
 
-//create task
-export function createTaskInDB(task: ITask) {
-  logger.info("Called createTaskInDB")
-  db.push(task);
-  return {message:"task created"}
-}
+  static async getUserTasks(user_id: number, filter: getTaskQuery) {
+    const { q, page, size } = filter;
+    const query = this.queryBuilder()
+      .select("id", "name", "status_id")
+      .table("tasks")
+      .where({ user_id })
+      .limit(size)
+      .offset((page - 1) * size);
+    if (q) {
+      query.whereLike("name", `%${q}%`);
+    }
+    return query;
+  }
 
-//update task
-export function updateTaskInDB(
-  index: number,
-  updatedTask: ITask,
-) {
-  logger.info("Called updateTaskInDB")
-  db[index] = updatedTask; //update task
-  return {message: "task updated"}
-}
-
-//delete all tasks by user id
-export function deleteAllTasksByUserId(userId: number) {
-  logger.info("Called deleteAlltasksByUserId")
-  const initialLength = db.length;
-  db = db.filter((task) => task.userId !== userId);
-  const deletedCount = initialLength - db.length; //find number of delted tasks
-  return { message: `${deletedCount} task(s) deleted for user ID ${userId}` }; //return message
+  static countByUserId(user_id: number, filter: getTaskQuery) {
+    const { q } = filter;
+    const query = this.queryBuilder()
+      .count("*")
+      .from("tasks")
+      .where({ user_id })
+      .first()
+    
+    if (q) {
+      query.whereLike("name", `%${q}%`);
+    }
+    return query;
+  }
 }
