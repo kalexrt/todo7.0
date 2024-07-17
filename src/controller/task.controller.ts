@@ -19,7 +19,7 @@ export function getAllTasks(req: Request, res: Response, next: NextFunction) {
 }
 
 //get task by id
-export function getTaskById(req: Request, res: Response, next: NextFunction) {
+export function getTaskById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
   try {
     logger.info("Called getTaskById");
     const user =  req.user!; //extract user
@@ -32,7 +32,7 @@ export function getTaskById(req: Request, res: Response, next: NextFunction) {
 }
 
 //delete task by id
-export function deleteTaskById(req: Request, res: Response, next: NextFunction) {
+export function deleteTaskById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
   try {
     logger.info("Called deleteTaskById")
     const user =  req.user!; //extract user
@@ -57,7 +57,7 @@ export function createTask(req: Request, res: Response, next: NextFunction) {
 }
 
 //update specific task
-export function updateTaskById(req: Request, res: Response, next: NextFunction) {
+export function updateTaskById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
   try {
     logger.info("Called updateTaskById");
     const user =  req.user!; //extract user

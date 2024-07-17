@@ -14,7 +14,7 @@ const logger = loggerWithNameSpace ("AuthService");
 export async function login(body: Pick<User, "email" | "password">) {
 
   logger.info("Called login")
-  const existingUser = getUserByEmail(body.email);
+  const existingUser = await getUserByEmail(body.email);
   if (!existingUser) {
     throw new ClientError("Invalid email or password");
   }

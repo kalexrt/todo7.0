@@ -1,9 +1,9 @@
 export interface User {
-  id: string;
-  name: string;
-  email: string;
-  password: string;
-  permissions:string[];
+  id?: string;
+  name?: string;
+  email?: string;
+  password?: string;
+  permissions?:string[];
 }
 
 export interface getUserQuery {

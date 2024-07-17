@@ -5,27 +5,76 @@ import { BaseModel } from "./Base";
 const logger = loggerWithNameSpace("UserModel");
 
 export class UserModel extends BaseModel {
-  static async create(user: User) {
+  //create user
+  static async create(user: User, createdBy: string) {
     const userToCreate = {
       name: user.name,
-      email: user.email, 
+      email: user.email,
       password: user.password,
+      created_by: createdBy,
     };
 
     await this.queryBuilder().insert(userToCreate).table("users");
   }
-  static async update(id:string, user: User) {
+  static async update(id: string, user: User, updatedBy: string) {
     const userToUpdate = {
       name: user.name,
       email: user.email,
       password: user.password,
-      updatedAt: new Date(),
+      updated_at: new Date(),
+      updated_by: updatedBy
     };
+    await this.queryBuilder().update(userToUpdate).table("users").where({ id });
+  }
 
-    await this.queryBuilder()
-      .update(userToUpdate)
-      .table("users")
-      .where({id});
+  //get user by email
+  static async getByEmail(email: string) {
+    logger.info("Called getByEmail");
+
+    const result = await this.queryBuilder()
+      .select("users.id", "users.email", "users.name", "users.password")
+      .from("users")
+      .where("users.email", email);
+
+    const permArray = await this.getPermissions(result[0].id);
+    result[0].permissions = permArray;
+    return result[0];
+  }
+
+  //get user permissions
+  static async getPermissions(id: number) {
+    logger.info("Called getPermissions");
+
+    const permissionId = await this.queryBuilder()
+      .select("permission_id")
+      .from("user_permissions")
+      .where("user_id", id);
+
+    const permissions = await Promise.all(
+      permissionId.map(async (permission) => {
+        const result = await this.queryBuilder()
+          .select("permissions")
+          .from("permissions")
+          .where({ id: permission.permission_id });
+        return result[0].permissions;
+      })
+    );
+    return permissions;
+  }
+
+  //get user by id
+  static async getUserById(id: string){
+    return await this.queryBuilder()
+    .select('*')
+    .from('users')
+    .where({id})
+    .first();
+  }
+
+  //delete the user by the id
+  static async deleteUserById(id: string) {
+    logger.info("Called deleteUserById");
+    return await this.queryBuilder().delete().from("users").where({ id });
   }
 }
 
@@ -52,28 +101,6 @@ export let users: User[] = [
   },
 ];
 
-//find user index
-export function findUserIndex(id: number) {
-  logger.info("Called FindTask");
-  const index = users.findIndex((users) => +users.id === id);
-  return index;
-}
-
-//return user by id
-export function getUserByIndex(index: number) {
-  logger.info("Called getUserById");
-  return users[index];
-}
-
-//create users
-export function createUser(user: User) {
-  logger.info("Called createUser");
-  users.push({
-    ...user,
-    id: `${users[users.length - 1].id + 1}`,
-  });
-  return { message: "user created" };
-}
 
 //get all users
 export function getUsers(query: getUserQuery) {
@@ -83,27 +110,4 @@ export function getUsers(query: getUserQuery) {
     return users.filter(({ name }) => name.includes(q));
   }
   return users;
-}
-
-//return user by email
-export function getUserByEmail(email: string) {
-  logger.info("Called getUsersByEmail");
-  return users.find(({ email: userEmail }) => userEmail === email);
-}
-
-//delete the user by the id
-export function deleteUserById(index: number) {
-  logger.info("Called deleteUserById");
-  users.splice(index, 1);
-  return { message: `user deleted` };
-}
-
-//update the user from the given Id
-export function updateUserByIndex(
-  index: number,
-  updatedUserData: Partial<User>
-) {
-  logger.info("Called updateUserById");
-  users[index] = { ...users[index], ...updatedUserData };
-  return { message: `user updated` };
 }

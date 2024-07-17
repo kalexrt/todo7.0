@@ -1,4 +1,5 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
+import { Request } from "../interfaces/auth.interface";
 
 import * as userService from "../service/user.service";
 import { getUserQuery } from "../interfaces/user.interface";
@@ -8,7 +9,7 @@ import loggerWithNameSpace from "../utils/logger";
 const logger = loggerWithNameSpace("UserController");
 
 //get all users
-export function getUsers(
+export async function getUsers(
   req: Request<any, any, any, getUserQuery>,
   res: Response,
   next: NextFunction
@@ -16,7 +17,7 @@ export function getUsers(
   try {
     logger.info("Called getUsers");
     const { query } = req;
-    const data = userService.getUsers(query);
+    const data = await userService.getUsers(query);
     res.status(HttpStatusCodes.OK).json(data);
   } catch (error) {
     next(); // pass error to the error handling middleware
@@ -24,11 +25,11 @@ export function getUsers(
 }
 
 //get user by id
-export function getUserById(req: Request, res: Response, next: NextFunction) {
+export async function getUserById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
     logger.info("Called getUserbyId");
-    const data = userService.getUserById(parseInt(id));
+    const data = await userService.getUserById(id);
     res.status(HttpStatusCodes.OK).json(data);
   } catch (error) {
     next(); // pass error to the error handling middleware
@@ -40,7 +41,7 @@ export async function createUser(req: Request, res: Response, next: NextFunction
   try {
     const { body } = req;
     logger.info("Called createUser");
-    await userService.createUser(body);
+    await userService.createUser(body, req.user.id!);
     res.status(HttpStatusCodes.OK).json({
       message: "User created",
     });
@@ -50,12 +51,12 @@ export async function createUser(req: Request, res: Response, next: NextFunction
 }
 
 //update user by id
-export function updateUserById(req: Request, res: Response, next: NextFunction) {
+export async function updateUserById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
   try {
     logger.info("Called updateUserById");
     const id = parseInt(req.params.id);
     const updatedUserData = req.body;
-    const updatedUser = userService.updateUserById(id, updatedUserData);
+    const updatedUser = await userService.updateUserById(id, updatedUserData, req.user.id);
     res.status(HttpStatusCodes.OK).json({ message: "User updated" });
   } catch (error) {
     next();
@@ -63,10 +64,10 @@ export function updateUserById(req: Request, res: Response, next: NextFunction) 
 }
 
 //delete user by id
-export function deleteUserById(req: Request, res: Response, next:NextFunction){
+export async function deleteUserById(req: Request<{ id: string }>, res: Response, next:NextFunction){
   try {
     const { id } = req.params; //extract the user ID
-    res.status(HttpStatusCodes.OK).json(userService.deleteUserById(parseInt(id))); //delete specific user
+    res.status(HttpStatusCodes.OK).json(await userService.deleteUserById(parseInt(id))); //delete specific user
   } catch (error) {
     next();
   }

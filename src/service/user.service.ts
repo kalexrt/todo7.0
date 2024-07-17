@@ -1,6 +1,6 @@
-import bcrypt from "bcrypt";
+import bcrypt, { hash } from "bcrypt";
 import { getUserQuery, User } from "../interfaces/user.interface";
-import * as taskModel from "../model/task.model"
+import * as taskModel from "../model/task.model";
 import * as userModel from "../model/user.model";
 import loggerWithNameSpace from "../utils/logger";
 import { NotFoundError } from "../error/NotFoundError";
@@ -8,66 +8,83 @@ import { NotFoundError } from "../error/NotFoundError";
 const logger = loggerWithNameSpace("UserService");
 
 // get a user by their ID
-export function getUserById(id: number) {
+export async function getUserById(id: string) {
   logger.info("Called getUserById");
-  const index = userModel.findUserIndex(id);
-  if (index === -1)throw new NotFoundError("User with this Id does not exist")
-  const data = userModel.getUserByIndex(index);
-  return data;
+
+  const user = await userModel.UserModel.getUserById(id.toString());
+  if (!user) throw new NotFoundError("User with this Id does not exist");
+
+  const data = await userModel.UserModel.getUserById(id);
+  return {data};
 }
 
 // create a new user with a hashed password
-export async function createUser(user: User) {
+export async function createUser(user: User, id: string) {
   logger.info("Called createUser");
+  const createdBy = id;
   const password = await bcrypt.hash(user.password, 10);
 
-  userModel.UserModel.create({
-    ...user,
-    password,
-  });
+  userModel.UserModel.create(
+    {
+      ...user,
+      password,
+    },
+    createdBy
+  );
 }
 
 // get users based on a query
-export function getUsers(query: getUserQuery) {
+export async function getUsers(query: getUserQuery) {
   logger.info("Called getUsers");
   const data = userModel.getUsers(query);
-  if(!data){
-    throw new NotFoundError("User with this id does not exist")
+  if (!data) {
+    throw new NotFoundError("User with this id does not exist");
   }
-  return data
+  return data;
 }
 
 // get a user by their email
-export function getUserByEmail(email: string) {
+export async function getUserByEmail(email: string) {
   logger.info("Called getUserByEmail");
-  const data = userModel.getUserByEmail(email);
-  if(!data){
-    throw new NotFoundError("User with this email does not exist")
+  const data = await userModel.UserModel.getByEmail(email);
+  if (!data) {
+    throw new NotFoundError("User with this email does not exist");
   }
   return data;
 }
 
 // delete a user by their ID, including all their tasks
-export function deleteUserById(id:number){
+export async function deleteUserById(id: number) {
   logger.info("Called deleteUserById");
-  const index = userModel.findUserIndex(id);
-  if (index === -1)throw new NotFoundError("User with this Id does not exist");
 
-  const taskDeletionResult = taskModel.deleteAllTasksByUserId(index); //delete all user tasks
-  const userDeletionResult = userModel.deleteUserById(id); //delete user
+  const user = await userModel.UserModel.getUserById(id.toString());
+  if (!user) throw new NotFoundError("User with this Id does not exist");
+
+  await userModel.UserModel.deleteUserById(id.toString());
   return {
-    taskDeletionResult,
-    userDeletionResult,
+    message: "user deleted",
   };
 }
 
 // update user information by their ID
-export function updateUserById(id: number, updatedUserData: Partial<User>){
+export async function updateUserById(
+  id: number,
+  updatedUserData: User,
+  updatedBy: string
+) {
   logger.info("Called updateUserById");
 
-  const index = userModel.findUserIndex(id);
-  if (index === -1)throw new NotFoundError("User with this Id does not exist");
+  const user = await userModel.UserModel.getUserById(id.toString());
+  if (!user) throw new NotFoundError("User with this Id does not exist");
 
-  const data = userModel.updateUserByIndex(index, updatedUserData);
-  return data
+  const password = await bcrypt.hash(updatedUserData.password, 10);
+
+  userModel.UserModel.update(
+    id.toString(),
+    { ...updatedUserData, password },
+    updatedBy
+  );
+  return {
+    message: "user updated",
+  };
 }
