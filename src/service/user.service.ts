@@ -33,15 +33,18 @@ export async function createUser(user: User, id: string) {
   );
 }
 
-// get users based on a query
-export async function getUsers(query: getUserQuery) {
-  logger.info("Called getUsers");
-  const data = userModel.getUsers(query);
-  if (!data) {
-    throw new NotFoundError("User with this id does not exist");
-  }
-  return data;
-}
+// Get all users
+export const getUsers = async (query: getUserQuery) => {
+  const data = await userModel.UserModel.getUsers(query);
+  if (!data) throw new NotFoundError("No users found");
+  const count = await userModel.UserModel.count(query);
+  const meta = {
+    page: query.page,
+    size: data.length,
+    total: +count.count,
+  };
+  return { data, meta };
+};
 
 // get a user by their email
 export async function getUserByEmail(email: string) {

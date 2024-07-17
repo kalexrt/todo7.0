@@ -8,4 +8,6 @@ export interface User {
 
 export interface getUserQuery {
   q?: string;
+  page?: number;
+  size?: number;
 }

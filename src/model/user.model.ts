@@ -76,6 +76,30 @@ export class UserModel extends BaseModel {
     logger.info("Called deleteUserById");
     return await this.queryBuilder().delete().from("users").where({ id });
   }
+
+  // Function to get all users
+  static getUsers(filter: getUserQuery) {
+    const { q, page, size } = filter;
+    const query = this.queryBuilder()
+      .select("id", "email", "name")
+      .table("users")
+      .limit(size)
+      .offset((page - 1) * size);
+    if (q) {
+      query.whereLike("name", `%${q}%`);
+    }
+    return query;
+  }
+
+  // Function to count users
+  static count(filter: getUserQuery) {
+    const { q } = filter;
+    const query = this.queryBuilder().count("*").table("users").first();
+    if (q) {
+      query.whereLike("name", `%${q}%`);
+    }
+    return query;
+  }
 }
 
 export let users: User[] = [
@@ -102,12 +126,3 @@ export let users: User[] = [
 ];
 
 
-//get all users
-export function getUsers(query: getUserQuery) {
-  logger.info("Called getUsers");
-  const { q } = query;
-  if (q) {
-    return users.filter(({ name }) => name.includes(q));
-  }
-  return users;
-}
